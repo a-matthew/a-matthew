@@ -1,0 +1,35 @@
+name: a-matthew CD Orchestrator
+
+on:
+  push:
+  schedule:
+    - cron: "0 20 */2 * *"
+  workflow_dispatch:
+    inputs: # Max 10 inputs: https://github.com/orgs/community/discussions/8774
+      runtime_action_branch:
+        type: choice
+        description: Runtime git branch
+        default: main
+        options:
+          - main
+
+run-name: "${{ format('CD - Running {0} README update', github.event_name != 'workflow_dispatch' && 'automatic' || 'manual') }}"
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # https://github.com/actions/runner/issues/4295
+
+jobs:
+  cd-deploy:
+    runs-on: ubuntu-latest
+    name: "CD-Deploy"
+    permissions:
+      contents: write # Remember to disable PRs on every repository using such settings...
+    steps:
+      - uses: actions/checkout@v4
+      - uses: a-matthew/github-profile-summary-cards@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.README_PAT }}
+        with:
+          USERNAME: ${{ github.repository_owner }}
+          BRANCH_NAME: ${{ github.event_name != 'workflow_dispatch' && 'main' ||  inputs.runtime_action_branch }}
+          UTC_OFFSET: 1
+          AUTO_PUSH: true
